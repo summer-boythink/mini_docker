@@ -16,7 +16,7 @@ func FindCgroupMountPoint(subsystem string) string {
 	defer func(f *os.File) {
 		err := f.Close()
 		if err != nil {
-			fmt.Errorf("%v",err)
+			fmt.Errorf("%v", err)
 		}
 	}(f)
 

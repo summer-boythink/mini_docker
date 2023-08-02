@@ -6,13 +6,13 @@ import (
 )
 
 type CgroupManager struct {
-	Path string
+	Path     string
 	Resource *subsystems.ResourceConfig
 }
 
 func NewManager(path string) *CgroupManager {
 	return &CgroupManager{
-		Path:path,
+		Path: path,
 	}
 }
 

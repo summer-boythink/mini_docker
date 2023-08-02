@@ -9,8 +9,8 @@ import (
 	"strings"
 )
 
-func Run(tty bool, commands []string,resConf *subsystems.ResourceConfig) {
-	parent,writePipe := container.NewParentProcess(tty)
+func Run(tty bool, commands []string, resConf *subsystems.ResourceConfig) {
+	parent, writePipe := container.NewParentProcess(tty)
 	if parent == nil {
 		log.Errorf("New parent process error")
 		return
@@ -28,8 +28,11 @@ func Run(tty bool, commands []string,resConf *subsystems.ResourceConfig) {
 	}(cgroupManager)
 	cgroupManager.Set(resConf)
 	cgroupManager.Apply(parent.Process.Pid)
-	sendInitCommand(commands,writePipe)
+	sendInitCommand(commands, writePipe)
 	parent.Wait()
+	mntURL := "/root/gos_open/mydocker/mnt/"
+	rootURL := "/root/gos_open/mydocker/"
+	container.DeleteWorkSpace(rootURL, mntURL)
 	os.Exit(0)
 }
 
