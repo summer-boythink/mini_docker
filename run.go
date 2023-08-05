@@ -5,6 +5,7 @@ import (
 	"github.com/summer-boythink/mydocker/cgroup"
 	"github.com/summer-boythink/mydocker/cgroup/subsystems"
 	"github.com/summer-boythink/mydocker/container"
+	"github.com/summer-boythink/mydocker/devconst"
 	"os"
 	"strings"
 )
@@ -30,9 +31,7 @@ func Run(tty bool, commands []string, resConf *subsystems.ResourceConfig, volume
 	cgroupManager.Apply(parent.Process.Pid)
 	sendInitCommand(commands, writePipe)
 	parent.Wait()
-	mntURL := "/root/gos_open/mydocker/mnt/"
-	rootURL := "/root/gos_open/mydocker/"
-	container.DeleteWorkSpace(rootURL, mntURL, volume)
+	container.DeleteWorkSpace(devconst.RootURL, devconst.MntURL, volume)
 	os.Exit(0)
 }
 

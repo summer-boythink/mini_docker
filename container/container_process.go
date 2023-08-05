@@ -3,6 +3,7 @@ package container
 import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
+	"github.com/summer-boythink/mydocker/devconst"
 	"os"
 	"os/exec"
 	"strings"
@@ -27,12 +28,8 @@ func NewParentProcess(tty bool, volume string) (*exec.Cmd, *os.File) {
 		cmd.Stderr = os.Stderr
 	}
 	cmd.ExtraFiles = []*os.File{readPipe}
-	rootURL := "/root/gos_open/mydocker/"
-	mntURL := "/root/gos_open/mydocker/mnt/"
-	tmpURL := rootURL + "myTmp/"
-	writeURL := rootURL + "writeLayer/"
-	NewWorkSpace(rootURL, mntURL, tmpURL, writeURL, volume)
-	cmd.Dir = mntURL
+	NewWorkSpace(devconst.RootURL, devconst.MntURL, devconst.TmpURL, devconst.WriteURL, volume)
+	cmd.Dir = devconst.MntURL
 	return cmd, writePipe
 }
 
