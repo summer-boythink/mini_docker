@@ -1,16 +1,21 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/summer-boythink/mydocker/cgroup"
 	"github.com/summer-boythink/mydocker/cgroup/subsystems"
 	"github.com/summer-boythink/mydocker/container"
 	"github.com/summer-boythink/mydocker/devconst"
+	"math/rand"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 )
 
-func Run(tty bool, commands []string, resConf *subsystems.ResourceConfig, volume string) {
+func Run(tty bool, commands []string, resConf *subsystems.ResourceConfig, volume string, containerName string) {
 	parent, writePipe := container.NewParentProcess(tty, volume)
 	if parent == nil {
 		log.Errorf("New parent process error")
@@ -20,6 +25,11 @@ func Run(tty bool, commands []string, resConf *subsystems.ResourceConfig, volume
 		log.Error(err)
 	}
 
+	containerName, err := recordContainerInfo(parent.Process.Pid, commands, containerName)
+	if err != nil {
+		log.Errorf("record err:%v", err)
+		return
+	}
 	cgroupManager := cgroup.NewManager("my-group")
 	defer func(cgroupManager *cgroup.CgroupManager) {
 		err := cgroupManager.Destroy()
@@ -32,9 +42,17 @@ func Run(tty bool, commands []string, resConf *subsystems.ResourceConfig, volume
 	sendInitCommand(commands, writePipe)
 	if tty {
 		parent.Wait()
+		deleteContainerInfo(containerName)
 	}
 	container.DeleteWorkSpace(devconst.RootURL, devconst.MntURL, volume)
 	os.Exit(0)
+}
+
+func deleteContainerInfo(name string) {
+	dirURL := fmt.Sprintf(container.DefaultInfoLocation, name)
+	if err := os.RemoveAll(dirURL); err != nil {
+		log.Errorf("Remove dir %s error %v", dirURL, err)
+	}
 }
 
 func sendInitCommand(commands []string, writePipe *os.File) {
@@ -42,4 +60,61 @@ func sendInitCommand(commands []string, writePipe *os.File) {
 	log.Infof("command all is %s", command)
 	writePipe.WriteString(command)
 	writePipe.Close()
+}
+
+func recordContainerInfo(containerPid int, commandArr []string, containerName string) (string, error) {
+	id := randStringBytes(10)
+	createTime := time.Now().Format("2006-01-02 15:04:05")
+	commands := strings.Join(commandArr, "")
+	if containerName == "" {
+		containerName = id
+	}
+	containerInfo := container.Info{
+		Pid:         strconv.Itoa(containerPid),
+		Id:          id,
+		Name:        containerName,
+		Command:     commands,
+		CreatedTime: createTime,
+		Status:      container.RUNNING,
+	}
+
+	jsonBytes, err := json.Marshal(containerInfo)
+	if err != nil {
+		log.Errorf("Record container info error %v", err)
+		return "", err
+	}
+	jsonStr := string(jsonBytes)
+	dirUrl := fmt.Sprintf(container.DefaultInfoLocation, containerName)
+	if err := os.MkdirAll(dirUrl, 0622); err != nil {
+		log.Errorf("Mkdir error path %s,error:%s", dirUrl, err)
+		return "", err
+	}
+	fileName := dirUrl + "/" + container.ConfigName
+	file, err := os.Create(fileName)
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			panic(err)
+		}
+	}(file)
+	if err != nil {
+		log.Errorf("Create file %s error %v", fileName, err)
+		return "", err
+	}
+	if _, err := file.WriteString(jsonStr); err != nil {
+		log.Errorf("File write string error %v", err)
+		return "", err
+	}
+
+	return containerName, nil
+}
+
+func randStringBytes(n int) string {
+	letterBytes := "1234567890"
+	rand.Seed(time.Now().UnixNano())
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+	}
+	return string(b)
 }
