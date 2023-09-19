@@ -33,6 +33,10 @@ var runCommand = cli.Command{
 			Name:  "v",
 			Usage: "volume",
 		},
+		cli.BoolFlag{
+			Name:  "d",
+			Usage: "detach container",
+		},
 	},
 	Action: func(context *cli.Context) error {
 		if len(context.Args()) < 1 {
@@ -44,12 +48,19 @@ var runCommand = cli.Command{
 			cmdArray = append(cmdArray, arg)
 		}
 		tty := context.Bool("ti")
+		detach := context.Bool("d")
+
+		if tty && detach {
+			return fmt.Errorf("ti and d can't both provide")
+		}
+
 		resConf := &subsystems.ResourceConfig{
 			MemoryLimit: context.String("memory"),
 			CpuSet:      context.String("cpuSet"),
 			CpuShare:    context.String("cpuShare"),
 		}
 		volume := context.String("v")
+		log.Infof("createTty %v", tty)
 		Run(tty, cmdArray, resConf, volume)
 		return nil
 	},
