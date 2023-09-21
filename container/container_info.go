@@ -6,6 +6,7 @@ var (
 	Exit                string = "exited"
 	DefaultInfoLocation string = "/root/.mydoc/%s/"
 	ConfigName          string = "config.json"
+	ContainerLogFile    string = "container.log"
 )
 
 type Info struct {
