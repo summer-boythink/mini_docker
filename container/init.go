@@ -69,7 +69,7 @@ func pivotRoot(root string) error {
 	}
 
 	pivotDir := filepath.Join(root, ".pivot_root")
-	if err := os.Mkdir(pivotDir, 0777); err != nil {
+	if err := os.MkdirAll(pivotDir, 0777); err != nil {
 		return err
 	}
 

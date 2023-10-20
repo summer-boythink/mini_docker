@@ -3,24 +3,24 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	log "github.com/sirupsen/logrus"
-	"github.com/summer-boythink/mydocker/cgroup"
-	"github.com/summer-boythink/mydocker/cgroup/subsystems"
-	"github.com/summer-boythink/mydocker/container"
-	"github.com/summer-boythink/mydocker/devconst"
 	"math/rand"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	log "github.com/sirupsen/logrus"
+	"github.com/summer-boythink/mydocker/cgroup"
+	"github.com/summer-boythink/mydocker/cgroup/subsystems"
+	"github.com/summer-boythink/mydocker/container"
 )
 
-func Run(tty bool, commands []string, resConf *subsystems.ResourceConfig, volume string, containerName string) {
+func Run(tty bool, commands []string, resConf *subsystems.ResourceConfig, volume string, containerName string, imageName string) {
 	id := randStringBytes(10)
 	if containerName == "" {
 		containerName = id
 	}
-	parent, writePipe := container.NewParentProcess(tty, volume, containerName)
+	parent, writePipe := container.NewParentProcess(tty, volume, containerName, imageName)
 	if parent == nil {
 		log.Errorf("New parent process error")
 		return
@@ -29,7 +29,7 @@ func Run(tty bool, commands []string, resConf *subsystems.ResourceConfig, volume
 		log.Error(err)
 	}
 
-	containerName, err := recordContainerInfo(parent.Process.Pid, commands, containerName, id)
+	containerName, err := recordContainerInfo(parent.Process.Pid, commands, containerName, id, volume)
 	if err != nil {
 		log.Errorf("record err:%v", err)
 		return
@@ -47,8 +47,9 @@ func Run(tty bool, commands []string, resConf *subsystems.ResourceConfig, volume
 	if tty {
 		parent.Wait()
 		deleteContainerInfo(containerName)
+		container.DeleteWorkSpace(volume, containerName)
 	}
-	container.DeleteWorkSpace(devconst.RootURL, devconst.MntURL, volume)
+	// container.DeleteWorkSpace(volume, containerName)
 	os.Exit(0)
 }
 
@@ -66,7 +67,7 @@ func sendInitCommand(commands []string, writePipe *os.File) {
 	writePipe.Close()
 }
 
-func recordContainerInfo(containerPid int, commandArr []string, containerName string, id string) (string, error) {
+func recordContainerInfo(containerPid int, commandArr []string, containerName string, id string, volume string) (string, error) {
 	createTime := time.Now().Format("2006-01-02 15:04:05")
 	commands := strings.Join(commandArr, "")
 	containerInfo := container.Info{
@@ -76,6 +77,7 @@ func recordContainerInfo(containerPid int, commandArr []string, containerName st
 		Command:     commands,
 		CreatedTime: createTime,
 		Status:      container.RUNNING,
+		Volume:      volume,
 	}
 
 	jsonBytes, err := json.Marshal(containerInfo)

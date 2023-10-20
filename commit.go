@@ -7,10 +7,12 @@ import (
 	"os/exec"
 )
 
-func commitContainer(imageName string) {
+func commitContainer(containerName, imageName string) {
+	mntURL := fmt.Sprintf(devconst.MntURL, containerName)
+	mntURL += "/"
 	imageTar := devconst.RootURL + imageName + ".tar"
-	fmt.Printf("%s\n", imageTar)
-	if _, err := exec.Command("tar", "-czf", imageTar, "-C", devconst.MntURL, ".").CombinedOutput(); err != nil {
-		log.Errorf("Tar folder %s error %v", devconst.MntURL, err)
+
+	if _, err := exec.Command("tar", "-czf", imageTar, "-C", mntURL, ".").CombinedOutput(); err != nil {
+		log.Errorf("Tar folder %s error %v", mntURL, err)
 	}
 }
