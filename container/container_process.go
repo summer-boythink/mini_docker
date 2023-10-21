@@ -11,7 +11,7 @@ import (
 	"github.com/summer-boythink/mydocker/devconst"
 )
 
-func NewParentProcess(tty bool, volume string, containerName string, imageName string) (*exec.Cmd, *os.File) {
+func NewParentProcess(tty bool, volume string, containerName string, imageName string, envSlice []string) (*exec.Cmd, *os.File) {
 	readPipe, writePipe, err := NewPipe()
 	if err != nil {
 		log.Errorf("New pipe error %v", err)
@@ -42,6 +42,7 @@ func NewParentProcess(tty bool, volume string, containerName string, imageName s
 		cmd.Stdout = stdLogFile
 	}
 	cmd.ExtraFiles = []*os.File{readPipe}
+	cmd.Env = append(os.Environ(), envSlice...)
 	NewWorkSpace(volume, imageName, containerName)
 	cmd.Dir = fmt.Sprintf(devconst.MntURL, containerName)
 	return cmd, writePipe
@@ -106,8 +107,8 @@ func MountVolume(volumeURLs []string, containerName string) {
 }
 
 func volumeUrlExtract(volume string) []string {
-	var volumeURLs []string
-	volumeURLs = strings.Split(volume, ":")
+	// var volumeURLs []string
+	volumeURLs := strings.Split(volume, ":")
 	return volumeURLs
 }
 
