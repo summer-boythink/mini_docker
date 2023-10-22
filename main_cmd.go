@@ -174,3 +174,16 @@ var removeCommand = cli.Command{
 		return nil
 	},
 }
+
+var pullCommand = cli.Command{
+	Name:  "pull",
+	Usage: "pull a image to local",
+	Action: func(context *cli.Context) error {
+		if len(context.Args()) < 1 {
+			return fmt.Errorf("Missing image name")
+		}
+		imageName := context.Args().Get(0)
+		pullImage(imageName)
+		return nil
+	},
+}
